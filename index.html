@@ -6,527 +6,386 @@
   <title>Splat Viewer</title>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
     :root {
-      --bg: #0a0a0a;
-      --surface: #141414;
-      --border: #2a2a2a;
-      --accent: #c8f57e;
-      --text: #f0f0f0;
-      --muted: #666;
-      --radius: 10px;
+      --bg: #0a0a0a; --surface: #141414; --border: #2a2a2a;
+      --accent: #c8f57e; --text: #f0f0f0; --muted: #666; --radius: 10px;
     }
-
     body {
-      background: var(--bg);
-      color: var(--text);
+      background: var(--bg); color: var(--text);
       font-family: 'Inter', system-ui, sans-serif;
-      height: 100dvh;
-      display: flex;
-      flex-direction: column;
-      overflow: hidden;
+      height: 100dvh; display: flex; flex-direction: column; overflow: hidden;
     }
-
-    /* ── Header ── */
     header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 12px 20px;
-      border-bottom: 1px solid var(--border);
-      background: var(--surface);
-      z-index: 10;
-      flex-shrink: 0;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 12px 20px; border-bottom: 1px solid var(--border);
+      background: var(--surface); z-index: 10; flex-shrink: 0;
     }
-
-    .logo {
-      font-size: 15px;
-      font-weight: 600;
-      letter-spacing: -0.02em;
-      color: var(--text);
-    }
-
+    .logo { font-size: 15px; font-weight: 600; letter-spacing: -0.02em; }
     .logo span { color: var(--accent); }
-
-    .header-actions {
-      display: flex;
-      gap: 8px;
-      align-items: center;
-    }
-
+    .header-actions { display: flex; gap: 8px; align-items: center; }
     button {
-      cursor: pointer;
-      border: none;
-      font-family: inherit;
-      font-size: 13px;
-      font-weight: 500;
-      border-radius: var(--radius);
-      transition: opacity .15s, background .15s;
+      cursor: pointer; border: none; font-family: inherit;
+      font-size: 13px; font-weight: 500; border-radius: var(--radius);
+      transition: opacity .15s;
     }
-    button:hover { opacity: .85; }
-    button:disabled { opacity: .35; cursor: not-allowed; }
-
-    .btn-ghost {
-      background: transparent;
-      border: 1px solid var(--border);
-      color: var(--muted);
-      padding: 7px 14px;
-    }
-
-    .btn-primary {
-      background: var(--accent);
-      color: #0a0a0a;
-      padding: 7px 16px;
-    }
-
+    button:hover { opacity: .8; }
+    button:disabled { opacity: .3; cursor: not-allowed; }
+    .btn-ghost { background: transparent; border: 1px solid var(--border); color: var(--muted); padding: 7px 14px; }
+    .btn-primary { background: var(--accent); color: #0a0a0a; padding: 7px 16px; }
     .btn-ar {
-      background: #1a1a2e;
-      border: 1px solid #3a3a6e;
-      color: #a0a0ff;
-      padding: 7px 14px;
-      display: flex;
-      align-items: center;
-      gap: 6px;
+      background: #1a1a2e; border: 1px solid #3a3a6e; color: #a0a0ff;
+      padding: 7px 14px; display: flex; align-items: center; gap: 6px;
     }
 
-    /* ── Viewer wrapper ── */
-    #viewer-wrap {
-      position: relative;
-      flex: 1;
-      overflow: hidden;
-    }
+    #viewer-wrap { position: relative; flex: 1; overflow: hidden; }
+    #splat-viewer { width: 100%; height: 100%; }
 
-    #splat-viewer {
-      width: 100%;
-      height: 100%;
-    }
-
-    /* ── Loading overlay ── */
+    /* Loading */
     #loading {
-      position: absolute;
-      inset: 0;
-      background: var(--bg);
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      gap: 20px;
-      z-index: 5;
-      transition: opacity .4s;
+      position: absolute; inset: 0; background: var(--bg);
+      display: flex; flex-direction: column; align-items: center;
+      justify-content: center; gap: 16px; z-index: 5; transition: opacity .4s;
     }
-
-    #loading.hidden {
-      opacity: 0;
-      pointer-events: none;
-    }
-
+    #loading.hidden { opacity: 0; pointer-events: none; }
     .spinner {
-      width: 36px;
-      height: 36px;
-      border: 2px solid var(--border);
-      border-top-color: var(--accent);
-      border-radius: 50%;
+      width: 36px; height: 36px; border: 2px solid var(--border);
+      border-top-color: var(--accent); border-radius: 50%;
       animation: spin .8s linear infinite;
     }
-
     @keyframes spin { to { transform: rotate(360deg); } }
+    .load-label { font-size: 13px; color: var(--muted); }
+    #progress-bar-wrap { width: 200px; height: 2px; background: var(--border); border-radius: 2px; overflow: hidden; }
+    #progress-bar { height: 100%; width: 0%; background: var(--accent); transition: width .3s; }
 
-    .load-label {
-      font-size: 13px;
-      color: var(--muted);
-      letter-spacing: .04em;
-    }
-
-    #progress-bar-wrap {
-      width: 180px;
-      height: 2px;
-      background: var(--border);
-      border-radius: 2px;
-      overflow: hidden;
-    }
-
-    #progress-bar {
-      height: 100%;
-      width: 0%;
-      background: var(--accent);
-      transition: width .2s;
-    }
-
-    /* ── Drop zone (shown before load) ── */
+    /* Drop zone */
     #dropzone {
-      position: absolute;
-      inset: 0;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      gap: 16px;
-      z-index: 4;
+      position: absolute; inset: 0; display: flex;
+      flex-direction: column; align-items: center; justify-content: center; gap: 16px; z-index: 4;
     }
-
     #dropzone.hidden { display: none; }
-
     .drop-box {
-      border: 1.5px dashed var(--border);
-      border-radius: 16px;
-      padding: 48px 64px;
-      text-align: center;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 12px;
-      cursor: pointer;
-      transition: border-color .2s;
+      border: 1.5px dashed var(--border); border-radius: 16px;
+      padding: 40px 60px; text-align: center; display: flex;
+      flex-direction: column; align-items: center; gap: 10px; cursor: pointer; transition: border-color .2s;
     }
-
-    .drop-box:hover, .drop-box.drag-over {
-      border-color: var(--accent);
-    }
-
-    .drop-icon { font-size: 36px; }
-
-    .drop-title {
-      font-size: 15px;
-      font-weight: 600;
-      color: var(--text);
-    }
-
-    .drop-sub {
-      font-size: 12px;
-      color: var(--muted);
-    }
-
-    .drop-formats {
-      display: flex;
-      gap: 6px;
-      margin-top: 4px;
-    }
-
+    .drop-box:hover, .drop-box.drag-over { border-color: var(--accent); }
+    .drop-icon { font-size: 32px; }
+    .drop-title { font-size: 15px; font-weight: 600; }
+    .drop-sub { font-size: 12px; color: var(--muted); }
+    .drop-formats { display: flex; gap: 6px; margin-top: 4px; }
     .format-tag {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 4px;
-      padding: 2px 8px;
-      font-size: 11px;
-      color: var(--muted);
-      font-family: monospace;
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 4px; padding: 2px 8px; font-size: 11px; color: var(--muted); font-family: monospace;
     }
-
-    .divider {
-      font-size: 12px;
-      color: var(--muted);
-    }
-
-    /* ── URL input ── */
-    .url-row {
-      display: flex;
-      gap: 8px;
-      width: 100%;
-      max-width: 480px;
-    }
-
+    .divider { font-size: 12px; color: var(--muted); }
+    .url-row { display: flex; gap: 8px; width: 100%; max-width: 480px; }
     .url-input {
-      flex: 1;
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 8px 12px;
-      font-size: 13px;
-      color: var(--text);
-      font-family: monospace;
-      outline: none;
-      transition: border-color .15s;
+      flex: 1; background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 8px 12px; font-size: 13px;
+      color: var(--text); font-family: monospace; outline: none; transition: border-color .15s;
     }
-
     .url-input:focus { border-color: var(--accent); }
     .url-input::placeholder { color: var(--muted); }
 
-    /* ── Toast ── */
-    #toast {
-      position: absolute;
-      bottom: 20px;
-      left: 50%;
-      transform: translateX(-50%) translateY(60px);
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 10px 18px;
-      font-size: 13px;
-      color: var(--muted);
-      transition: transform .3s;
-      z-index: 20;
-      white-space: nowrap;
+    /* Error box */
+    #error-box {
+      display: none; background: #1a0a0a; border: 1px solid #5a2a2a;
+      border-radius: var(--radius); padding: 14px 18px; max-width: 480px;
+      font-size: 12px; color: #ff8080; line-height: 1.7; text-align: left;
     }
+    #error-box.visible { display: block; }
+    #error-box strong { color: #ffaaaa; display: block; margin-bottom: 4px; font-size: 13px; }
+    #error-box code { background: #2a1a1a; padding: 1px 5px; border-radius: 3px; font-family: monospace; }
 
-    #toast.show { transform: translateX(-50%) translateY(0); }
-
-    /* ── Controls hint ── */
+    /* Controls hint */
     #controls-hint {
-      position: absolute;
-      bottom: 16px;
-      right: 16px;
-      background: rgba(0,0,0,.6);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 10px 14px;
-      font-size: 11px;
-      color: var(--muted);
-      line-height: 1.8;
-      backdrop-filter: blur(8px);
-      z-index: 6;
-      display: none;
+      position: absolute; bottom: 16px; right: 16px;
+      background: rgba(0,0,0,.6); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 10px 14px;
+      font-size: 11px; color: var(--muted); line-height: 1.8;
+      backdrop-filter: blur(8px); z-index: 6; display: none;
     }
-
     #controls-hint.visible { display: block; }
 
-    /* ── AR not supported badge ── */
-    #ar-badge {
-      display: none;
-      font-size: 11px;
-      color: var(--muted);
-      padding: 4px 10px;
-      border: 1px solid var(--border);
-      border-radius: 6px;
+    /* Toast */
+    #toast {
+      position: absolute; bottom: 20px; left: 50%;
+      transform: translateX(-50%) translateY(60px);
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 10px 18px; font-size: 13px;
+      color: var(--muted); transition: transform .3s; z-index: 20; white-space: nowrap;
     }
+    #toast.show { transform: translateX(-50%) translateY(0); }
+    #ar-badge { display: none; font-size: 11px; color: var(--muted); padding: 4px 10px; border: 1px solid var(--border); border-radius: 6px; }
   </style>
 </head>
 <body>
 
-  <header>
-    <div class="logo">splat<span>.</span>view</div>
-    <div class="header-actions">
-      <span id="ar-badge">AR unavailable</span>
-      <button class="btn-ar" id="ar-btn" disabled>
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/>
-        </svg>
-        View in AR
-      </button>
-      <button class="btn-ghost" id="reset-btn" disabled>Reset</button>
-      <button class="btn-primary" id="load-new-btn" style="display:none">Load New</button>
-    </div>
-  </header>
+<header>
+  <div class="logo">splat<span>.</span>view</div>
+  <div class="header-actions">
+    <span id="ar-badge">AR unavailable</span>
+    <button class="btn-ar" id="ar-btn" disabled>
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/>
+      </svg>
+      View in AR
+    </button>
+    <button class="btn-ghost" id="reset-btn" disabled>Reset</button>
+    <button class="btn-ghost" id="load-new-btn" style="display:none">Load New</button>
+  </div>
+</header>
 
-  <div id="viewer-wrap">
-    <!-- Drop zone / URL entry -->
-    <div id="dropzone">
-      <div class="drop-box" id="drop-box">
-        <div class="drop-icon">⬡</div>
-        <div class="drop-title">Drop a splat file here</div>
-        <div class="drop-sub">or load from a URL below</div>
-        <div class="drop-formats">
-          <span class="format-tag">.splat</span>
-          <span class="format-tag">.ksplat</span>
-          <span class="format-tag">.ply</span>
-        </div>
+<div id="viewer-wrap">
+  <div id="dropzone">
+    <div class="drop-box" id="drop-box">
+      <div class="drop-icon">⬡</div>
+      <div class="drop-title">Drop a splat file here</div>
+      <div class="drop-sub">or load from a public URL below</div>
+      <div class="drop-formats">
+        <span class="format-tag">.splat</span>
+        <span class="format-tag">.ksplat</span>
+        <span class="format-tag">.ply</span>
       </div>
-      <div class="divider">— or —</div>
-      <div class="url-row">
-        <input class="url-input" id="url-input" type="text" placeholder="https://your-cdn.com/scene.ksplat" />
-        <button class="btn-primary" id="url-load-btn">Load</button>
-      </div>
-      <input type="file" id="file-input" accept=".splat,.ksplat,.ply" style="display:none"/>
     </div>
-
-    <!-- Viewer canvas target -->
-    <div id="splat-viewer"></div>
-
-    <!-- Loading overlay -->
-    <div id="loading" class="hidden">
-      <div class="spinner"></div>
-      <div id="progress-bar-wrap"><div id="progress-bar"></div></div>
-      <div class="load-label" id="load-label">Loading splat…</div>
+    <div id="error-box">
+      <strong>⚠ Failed to load</strong>
+      <span id="error-msg"></span>
     </div>
-
-    <!-- Controls hint -->
-    <div id="controls-hint">
-      🖱 Drag to orbit &nbsp;|&nbsp; Scroll to zoom<br>
-      Right-drag to pan &nbsp;|&nbsp; Double-click to focus
+    <div class="divider">— or enter a public URL —</div>
+    <div class="url-row">
+      <input class="url-input" id="url-input" type="text" placeholder="https://your-cdn.com/scene.ksplat" />
+      <button class="btn-primary" id="url-load-btn">Load</button>
     </div>
-
-    <!-- Toast -->
-    <div id="toast"></div>
+    <input type="file" id="file-input" accept=".splat,.ksplat,.ply" style="display:none"/>
   </div>
 
-  <script type="importmap">
-  {
-    "imports": {
-      "three": "https://unpkg.com/three@0.170.0/build/three.module.js",
-      "three/addons/": "https://unpkg.com/three@0.170.0/examples/jsm/",
-      "@mkkellogg/gaussian-splats-3d": "https://unpkg.com/@mkkellogg/gaussian-splats-3d@0.4.7/build/gaussian-splats-3d.module.js"
+  <div id="splat-viewer"></div>
+
+  <div id="loading" class="hidden">
+    <div class="spinner"></div>
+    <div id="progress-bar-wrap"><div id="progress-bar"></div></div>
+    <div class="load-label" id="load-label">Loading splat…</div>
+  </div>
+
+  <div id="controls-hint">
+    🖱 Drag to orbit &nbsp;|&nbsp; Scroll to zoom<br>
+    Right-drag / two-finger to pan
+  </div>
+  <div id="toast"></div>
+</div>
+
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://unpkg.com/three@0.170.0/build/three.module.js",
+    "three/addons/": "https://unpkg.com/three@0.170.0/examples/jsm/",
+    "@mkkellogg/gaussian-splats-3d": "https://unpkg.com/@mkkellogg/gaussian-splats-3d@0.4.7/build/gaussian-splats-3d.module.js"
+  }
+}
+</script>
+
+<script type="module">
+  import * as GaussianSplats3D from '@mkkellogg/gaussian-splats-3d';
+
+  // ── Config — swap this URL for any public splat ──
+  const DEFAULT_SPLAT_URL = null;
+  // e.g. const DEFAULT_SPLAT_URL = 'https://raw.githubusercontent.com/TommeDenney/GeneWebView/main/20190819_162420498_iOS.ply';
+  // NOTE: only works if NOT tracked by Git LFS. If your .gitattributes
+  // tracks *.ply via LFS, raw.githubusercontent.com returns a pointer
+  // file — host the binary on R2/S3/Backblaze instead.
+
+  const dropzone     = document.getElementById('dropzone');
+  const dropBox      = document.getElementById('drop-box');
+  const fileInput    = document.getElementById('file-input');
+  const urlInput     = document.getElementById('url-input');
+  const urlLoadBtn   = document.getElementById('url-load-btn');
+  const loadingEl    = document.getElementById('loading');
+  const loadLabel    = document.getElementById('load-label');
+  const progressBar  = document.getElementById('progress-bar');
+  const arBtn        = document.getElementById('ar-btn');
+  const arBadge      = document.getElementById('ar-badge');
+  const resetBtn     = document.getElementById('reset-btn');
+  const loadNewBtn   = document.getElementById('load-new-btn');
+  const controlsHint = document.getElementById('controls-hint');
+  const toastEl      = document.getElementById('toast');
+  const errorBox     = document.getElementById('error-box');
+  const errorMsg     = document.getElementById('error-msg');
+
+  let viewer = null;
+  let toastTimer = null;
+
+  function toast(msg, ms = 3000) {
+    toastEl.textContent = msg;
+    toastEl.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => toastEl.classList.remove('show'), ms);
+  }
+
+  function showError(msg) {
+    errorMsg.textContent = msg;
+    errorBox.classList.add('visible');
+  }
+
+  function clearError() {
+    errorBox.classList.remove('visible');
+  }
+
+  async function checkAR() {
+    if (!navigator.xr) { showARUnavailable(); return; }
+    const ok = await navigator.xr.isSessionSupported('immersive-ar').catch(() => false);
+    if (ok) { arBtn.disabled = false; }
+    else { showARUnavailable(); }
+  }
+
+  function showARUnavailable() {
+    arBtn.style.display = 'none';
+    arBadge.style.display = 'inline';
+  }
+
+  function destroyViewer() {
+    if (viewer) {
+      try { viewer.dispose(); } catch(e) {}
+      viewer = null;
     }
   }
-  </script>
 
-  <script type="module">
-    import * as GaussianSplats3D from '@mkkellogg/gaussian-splats-3d';
+  function createViewer() {
+    destroyViewer();
+    viewer = new GaussianSplats3D.Viewer({
+      rootElement: document.getElementById('splat-viewer'),
+      selfDrivenMode: true,
+      cameraUp: [0, -1, -0.6],
+      initialCameraPos: [0, -3, 6],
+      initialCameraLookAt: [0, 0, 0],
+      sharedMemoryForWorkers: false,  // required without COOP/COEP headers
+      webXRMode: GaussianSplats3D.WebXRMode.None,
+    });
+  }
 
-    // ── DOM refs ──
-    const dropzone      = document.getElementById('dropzone');
-    const dropBox       = document.getElementById('drop-box');
-    const fileInput     = document.getElementById('file-input');
-    const urlInput      = document.getElementById('url-input');
-    const urlLoadBtn    = document.getElementById('url-load-btn');
-    const loadingEl     = document.getElementById('loading');
-    const loadLabel     = document.getElementById('load-label');
-    const progressBar   = document.getElementById('progress-bar');
-    const arBtn         = document.getElementById('ar-btn');
-    const arBadge       = document.getElementById('ar-badge');
-    const resetBtn      = document.getElementById('reset-btn');
-    const loadNewBtn    = document.getElementById('load-new-btn');
-    const controlsHint  = document.getElementById('controls-hint');
-    const toastEl       = document.getElementById('toast');
+  async function loadScene(src, label = 'Loading…') {
+    clearError();
+    dropzone.classList.add('hidden');
+    loadingEl.classList.remove('hidden');
+    progressBar.style.width = '5%';
+    loadLabel.textContent = label;
 
-    let viewer = null;
-    let toastTimer = null;
+    createViewer();
 
-    // ── Toast ──
-    function toast(msg, duration = 3000) {
-      toastEl.textContent = msg;
-      toastEl.classList.add('show');
-      clearTimeout(toastTimer);
-      toastTimer = setTimeout(() => toastEl.classList.remove('show'), duration);
-    }
+    // Pulse the bar while waiting (mkkellogg progress events are inconsistent on PLY)
+    let pulsed = 5;
+    const pulse = setInterval(() => {
+      pulsed = Math.min(pulsed + 2, 85);
+      progressBar.style.width = pulsed + '%';
+    }, 400);
 
-    // ── AR detection ──
-    async function checkAR() {
-      if (!navigator.xr) { showARUnavailable(); return; }
-      const ok = await navigator.xr.isSessionSupported('immersive-ar').catch(() => false);
-      if (ok) {
-        arBtn.disabled = false;
-        arBtn.title = 'Launch immersive AR session';
-      } else {
-        showARUnavailable();
-      }
-    }
-
-    function showARUnavailable() {
-      arBtn.style.display = 'none';
-      arBadge.style.display = 'inline';
-    }
-
-    // ── Create / destroy viewer ──
-    function createViewer() {
-      if (viewer) { viewer.dispose(); viewer = null; }
-      viewer = new GaussianSplats3D.Viewer({
-        rootElement: document.getElementById('splat-viewer'),
-        selfDrivenMode: true,
-        cameraUp: [0, -1, -0.6],
-        initialCameraPos: [0, -3, 6],
-        initialCameraLookAt: [0, 0, 0],
-        webXRMode: GaussianSplats3D.WebXRMode.None,
-        sharedMemoryForWorkers: false,
+    try {
+      await viewer.addSplatScene(src, {
+        splatAlphaRemovalThreshold: 5,
+        showLoadingUI: false,
       });
-    }
 
-    // ── Load a scene (URL or object URL) ──
-    async function loadScene(src, label = 'Loading splat…') {
-      dropzone.classList.add('hidden');
-      loadingEl.classList.remove('hidden');
-      loadLabel.textContent = label;
-      progressBar.style.width = '0%';
+      clearInterval(pulse);
+      progressBar.style.width = '100%';
+      loadLabel.textContent = 'Finalizing…';
 
-      createViewer();
+      // Small delay so the bar completes visually
+      await new Promise(r => setTimeout(r, 300));
 
-      try {
-        await viewer.addSplatScene(src, {
-          progressiveLoad: true,
-          onProgress: (p) => {
-            progressBar.style.width = `${Math.round(p * 100)}%`;
-            loadLabel.textContent = `Loading… ${Math.round(p * 100)}%`;
-          }
-        });
+      loadingEl.classList.add('hidden');
+      controlsHint.classList.add('visible');
+      resetBtn.disabled = false;
+      loadNewBtn.style.display = 'inline-block';
+      viewer.start();
+      await checkAR();
 
-        loadingEl.classList.add('hidden');
-        controlsHint.classList.add('visible');
-        resetBtn.disabled = false;
-        loadNewBtn.style.display = 'inline-block';
-        viewer.start();
-        await checkAR();
-
-      } catch (err) {
-        console.error(err);
-        loadingEl.classList.add('hidden');
-        dropzone.classList.remove('hidden');
-        toast('❌ Failed to load splat. Check the URL or file format.');
-      }
-    }
-
-    // ── AR session ──
-    arBtn.addEventListener('click', async () => {
-      if (!viewer) return;
-      try {
-        viewer.setWebXRMode(GaussianSplats3D.WebXRMode.AR);
-        toast('Launching AR session…');
-      } catch (e) {
-        toast('AR session failed: ' + e.message);
-      }
-    });
-
-    // ── Reset camera ──
-    resetBtn.addEventListener('click', () => {
-      if (!viewer) return;
-      viewer.camera.position.set(0, -3, 6);
-      viewer.camera.lookAt(0, 0, 0);
-      toast('Camera reset');
-    });
-
-    // ── Load new ──
-    loadNewBtn.addEventListener('click', () => {
-      if (viewer) { viewer.dispose(); viewer = null; }
+    } catch (err) {
+      clearInterval(pulse);
+      console.error('Splat load error:', err);
+      loadingEl.classList.add('hidden');
       dropzone.classList.remove('hidden');
-      controlsHint.classList.remove('visible');
-      resetBtn.disabled = true;
-      loadNewBtn.style.display = 'none';
-      arBtn.disabled = true;
-      arBadge.style.display = 'none';
-      arBtn.style.display = 'flex';
-      urlInput.value = '';
-    });
 
-    // ── URL load ──
-    urlLoadBtn.addEventListener('click', () => {
-      const url = urlInput.value.trim();
-      if (!url) { toast('Paste a URL first'); return; }
-      loadScene(url);
-    });
-
-    urlInput.addEventListener('keydown', e => {
-      if (e.key === 'Enter') urlLoadBtn.click();
-    });
-
-    // ── File drop ──
-    dropBox.addEventListener('click', () => fileInput.click());
-
-    fileInput.addEventListener('change', () => {
-      const f = fileInput.files[0];
-      if (!f) return;
-      const objUrl = URL.createObjectURL(f);
-      loadScene(objUrl, `Loading ${f.name}…`);
-    });
-
-    document.addEventListener('dragover', e => {
-      e.preventDefault();
-      dropBox.classList.add('drag-over');
-    });
-
-    document.addEventListener('dragleave', () => {
-      dropBox.classList.remove('drag-over');
-    });
-
-    document.addEventListener('drop', e => {
-      e.preventDefault();
-      dropBox.classList.remove('drag-over');
-      const f = e.dataTransfer.files[0];
-      if (!f) return;
-      const ext = f.name.split('.').pop().toLowerCase();
-      if (!['splat','ksplat','ply'].includes(ext)) {
-        toast('Unsupported format. Use .splat, .ksplat or .ply');
-        return;
+      // Try to give a useful error message
+      let hint = err.message || String(err);
+      if (hint.includes('LFS') || hint.includes('version https://git-lfs')) {
+        hint = 'File appears to be a Git LFS pointer, not the actual binary. Host the .ply on R2, S3, or Backblaze and use that URL instead.';
+      } else if (hint.includes('CORS') || hint.includes('NetworkError') || hint.includes('Failed to fetch')) {
+        hint = 'CORS error — the server hosting this file must include an Access-Control-Allow-Origin: * header. GitHub raw URLs work; direct CDN links may not.';
+      } else if (hint.includes('not a valid')) {
+        hint = 'File format not recognised. Make sure it is a valid .ply, .splat or .ksplat.';
       }
-      const objUrl = URL.createObjectURL(f);
-      loadScene(objUrl, `Loading ${f.name}…`);
-    });
-  </script>
+      showError(hint);
+    }
+  }
+
+  // ── AR ──
+  arBtn.addEventListener('click', async () => {
+    if (!viewer) return;
+    try {
+      viewer.setWebXRMode(GaussianSplats3D.WebXRMode.AR);
+    } catch(e) {
+      toast('AR session failed: ' + e.message);
+    }
+  });
+
+  // ── Reset camera ──
+  resetBtn.addEventListener('click', () => {
+    if (!viewer) return;
+    viewer.camera.position.set(0, -3, 6);
+    viewer.camera.lookAt(0, 0, 0);
+    toast('Camera reset');
+  });
+
+  // ── Load new ──
+  loadNewBtn.addEventListener('click', () => {
+    destroyViewer();
+    dropzone.classList.remove('hidden');
+    controlsHint.classList.remove('visible');
+    resetBtn.disabled = true;
+    loadNewBtn.style.display = 'none';
+    arBtn.disabled = true;
+    arBtn.style.display = 'flex';
+    arBadge.style.display = 'none';
+    urlInput.value = '';
+    clearError();
+  });
+
+  // ── URL load ──
+  urlLoadBtn.addEventListener('click', () => {
+    const url = urlInput.value.trim();
+    if (!url) { toast('Paste a URL first'); return; }
+    loadScene(url);
+  });
+  urlInput.addEventListener('keydown', e => { if (e.key === 'Enter') urlLoadBtn.click(); });
+
+  // ── File pick ──
+  dropBox.addEventListener('click', () => fileInput.click());
+  fileInput.addEventListener('change', () => {
+    const f = fileInput.files[0];
+    if (!f) return;
+    loadScene(URL.createObjectURL(f), `Loading ${f.name}…`);
+  });
+
+  // ── Drag & drop ──
+  document.addEventListener('dragover', e => { e.preventDefault(); dropBox.classList.add('drag-over'); });
+  document.addEventListener('dragleave', () => dropBox.classList.remove('drag-over'));
+  document.addEventListener('drop', e => {
+    e.preventDefault();
+    dropBox.classList.remove('drag-over');
+    const f = e.dataTransfer.files[0];
+    if (!f) return;
+    const ext = f.name.split('.').pop().toLowerCase();
+    if (!['splat','ksplat','ply'].includes(ext)) {
+      showError(`Unsupported format ".${ext}" — use .splat, .ksplat or .ply`);
+      return;
+    }
+    loadScene(URL.createObjectURL(f), `Loading ${f.name}…`);
+  });
+
+  // ── Auto-load default if configured ──
+  if (DEFAULT_SPLAT_URL) {
+    loadScene(DEFAULT_SPLAT_URL, 'Loading default scene…');
+  }
+</script>
 </body>
 </html>
